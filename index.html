@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function() {
+        // Intercept and suppress external browser extension noise (MetaMask, Phantom, Web3 inpage scripts)
+        function isExtensionError(msg, stack, source) {
+          var str = ((msg || '') + ' ' + (stack || '') + ' ' + (source || '')).toLowerCase();
+          return (
+            str.indexOf('metamask') !== -1 ||
+            str.indexOf('inpage.js') !== -1 ||
+            str.indexOf('chrome-extension://') !== -1 ||
+            str.indexOf('ethereum') !== -1 ||
+            str.indexOf('failed to connect') !== -1
+          );
+        }
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason || {};
+          var msg = reason.message || String(reason);
+          var stack = reason.stack || '';
+          if (isExtensionError(msg, stack, '')) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            if (event.stopPropagation) event.stopPropagation();
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          var msg = event.message || '';
+          var stack = (event.error && event.error.stack) || '';
+          var source = event.filename || '';
+          if (isExtensionError(msg, stack, source)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            if (event.stopPropagation) event.stopPropagation();
+            return true;
+          }
+        }, true);
+
+        // Filter console.error for third-party extension injection failures
+        var origConsoleError = console.error;
+        console.error = function() {
+          var args = Array.prototype.slice.call(arguments);
+          var str = args.map(function(a) {
+            return (typeof a === 'object' && a !== null) ? (a.message || a.stack || JSON.stringify(a) || '') : String(a);
+          }).join(' ');
+          if (isExtensionError(str, '', '')) {
+            return;
+          }
+          return origConsoleError.apply(console, arguments);
+        };
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GEO Brand Monitor - AI Search Engine Optimization & Visibility Platform</title>
+    <meta name="description" content="Enterprise Generative Engine Optimization (GEO) SaaS platform tracking brand visibility, citations, and competitor share of voice across ChatGPT, Perplexity, Claude, and Gemini." />
+    <meta property="og:title" content="GEO Brand Monitor - AI Search Visibility SaaS" />
+    <meta property="og:description" content="Track and optimize your brand's presence across generative AI search engines." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Official PayPal Live Production JavaScript SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=BAAb9PaLBwHFolqFzDlAB0mqmQ_N75zZn_aR43PEuM7NkS42Dw-iS3iKymgeJTMivNPRHphLLJGYAJucZw&currency=USD&intent=capture&components=buttons"></script>
+  </head>
+  <body class="bg-[#F8FAFC] text-slate-900 font-sans antialiased selection:bg-indigo-500/20 selection:text-indigo-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

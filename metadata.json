@@ -1,0 +1,6 @@
+{
+  "name": "GEO Brand Monitor",
+  "description": "Enterprise Generative Engine Optimization (GEO) SaaS platform tracking brand visibility, citations, and competitor share of voice across ChatGPT, Perplexity, Claude, and Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

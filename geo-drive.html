@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Geo-Drive 3D — Open-World Brand Courier</title>
+  <meta name="description" content="High-performance 3D open-world courier mini-game for GEO Brand Monitor." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0f19;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #f8fafc;
+    }
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      outline: none;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Modern Dark/Indigo SaaS HUD Overlay */
+    .hud-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* Top Navigation & Status Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(99, 102, 241, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 12px;
+    }
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+    }
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+    .brand-subtitle {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* SaaS Floating Promo Banner */
+    .saas-cta-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.95), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+    }
+    .saas-cta-banner:hover {
+      border-color: rgba(165, 180, 252, 0.8);
+      transform: translateY(-1px);
+    }
+    .saas-banner-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .saas-sparkle {
+      color: #fbbf24;
+      font-size: 15px;
+    }
+    .cta-button {
+      background: linear-gradient(135deg, #4f46e5, #2563eb);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .cta-button:hover {
+      background: linear-gradient(135deg, #4338ca, #1d4ed8);
+      transform: scale(1.03);
+    }
+
+    /* Player Stats Cards */
+    .stats-row {
+      display: flex;
+      gap: 10px;
+    }
+    .stat-pill {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      padding: 6px 14px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+    .stat-pill .label {
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .stat-pill .value {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .stat-pill .value.money {
+      color: #34d399;
+    }
+
+    /* Active Mission Card */
+    .mission-hud {
+      position: absolute;
+      top: 76px;
+      left: 16px;
+      max-width: 320px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+    .mission-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .mission-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(79, 70, 229, 0.2);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .mission-reward {
+      font-size: 12px;
+      font-weight: 800;
+      color: #10b981;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .mission-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+    .mission-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .mission-distance-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .mission-distance-fill {
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(90deg, #4f46e5, #06b6d4);
+      transition: width 0.2s ease;
+    }
+    .mission-distance-text {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Proximity Interact Prompt */
+    .interact-toast {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #6366f1;
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+      padding: 12px 24px;
+      border-radius: 9999px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      animation: floatPrompt 1.5s ease-in-out infinite;
+    }
+    @keyframes floatPrompt {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -54%) scale(1.03); }
+    }
+    .interact-toast.visible {
+      display: flex;
+    }
+    .key-badge {
+      background: #4f46e5;
+      color: white;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    .interact-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* Bottom Control Bar / Dock */
+    .bottom-dock {
+      align-self: center;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+    }
+    .dock-tip {
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dock-tip kbd {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #e2e8f0;
+      font-size: 11px;
+      font-family: inherit;
+    }
+    .dock-btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #c7d2fe;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .dock-btn:hover {
+      background: rgba(79, 70, 229, 0.25);
+      color: #ffffff;
+    }
+
+    /* Mobile On-Screen Touch Controls */
+    .mobile-controls {
+      display: none;
+      position: absolute;
+      bottom: 20px;
+      left: 16px;
+      right: 16px;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .touch-btn {
+      pointer-events: auto;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid rgba(99, 102, 241, 0.5);
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .touch-btn:active {
+      background: rgba(79, 70, 229, 0.6);
+      transform: scale(0.95);
+    }
+    .d-pad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 54px);
+      grid-template-rows: repeat(2, 54px);
+      gap: 8px;
+    }
+    .action-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-controls {
+        display: flex;
+      }
+      .bottom-dock .dock-tip {
+        display: none;
+      }
+      .mission-hud {
+        max-width: 260px;
+      }
+      .saas-banner-text span.hide-mobile {
+        display: none;
+      }
+    }
+  </style>
+
+  <!-- Import Three.js via ES Modules CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- HUD Overlay -->
+  <div class="hud-layer">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <!-- Brand Logo / Badge -->
+      <div class="brand-badge interactive">
+        <div class="brand-icon">G</div>
+        <div>
+          <div class="brand-title">Geo-Drive 3D</div>
+          <div class="brand-subtitle">Autonomous Brand Courier</div>
+        </div>
+      </div>
+
+      <!-- SaaS Call-To-Action Promo Banner -->
+      <div class="saas-cta-banner interactive">
+        <div class="saas-banner-text">
+          <span class="saas-sparkle">✦</span>
+          <span>Play Geo-Drive &amp; Unlock Free Brand Audits!</span>
+        </div>
+        <a href="/dashboard" class="cta-button" target="_top" id="cta-link">
+          Explore Platform &rarr;
+        </a>
+      </div>
+
+      <!-- Player Stats -->
+      <div class="stats-row interactive">
+        <div class="stat-pill">
+          <span class="label">CREDITS:</span>
+          <span class="value money" id="hud-money">$0</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">DELIVERIES:</span>
+          <span class="value" id="hud-deliveries">0</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">SPEED:</span>
+          <span class="value" id="hud-speed">0 MPH</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Mission HUD Card -->
+    <div class="mission-hud interactive" id="mission-card">
+      <div class="mission-header">
+        <span class="mission-tag" id="mission-tag">ACTIVE DISPATCH</span>
+        <span class="mission-reward" id="mission-payout">+$250</span>
+      </div>
+      <div class="mission-title" id="mission-name">AI Prompt Index Batch</div>
+      <div class="mission-desc" id="mission-instruction">
+        Pick up the high-priority prompt dataset at Prompt Depot.
+      </div>
+      <div class="mission-distance-bar">
+        <div class="mission-distance-fill" id="mission-progress-bar"></div>
+      </div>
+      <div class="mission-distance-text">
+        <span id="mission-target-label">Target: Prompt Depot</span>
+        <span id="mission-distance">48m</span>
+      </div>
+    </div>
+
+    <!-- Central Proximity Action Toast -->
+    <div class="interact-toast" id="interact-prompt">
+      <span class="key-badge">SPACE / E</span>
+      <span class="interact-text" id="interact-message">Accept Dispatch</span>
+    </div>
+
+    <!-- Bottom Dock Controls & Tips -->
+    <div class="bottom-dock interactive">
+      <div class="dock-tip">
+        <span>Drive: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>&uarr;</kbd><kbd>&larr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></span>
+      </div>
+      <div class="dock-tip">
+        <span>Handbrake: <kbd>Space</kbd></span>
+      </div>
+      <button class="dock-btn" id="btn-camera" title="Switch Camera View">
+        <span>🎥 Cam Angle</span>
+      </button>
+      <button class="dock-btn" id="btn-audio" title="Toggle Sound">
+        <span id="audio-icon">🔊 Sound: ON</span>
+      </button>
+      <button class="dock-btn" id="btn-reset" title="Reset Vehicle">
+        <span>🔄 Respawn</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile On-Screen Controls -->
+  <div class="mobile-controls">
+    <div class="d-pad-grid">
+      <div></div>
+      <button class="touch-btn" id="touch-up">&uarr;</button>
+      <div></div>
+      <button class="touch-btn" id="touch-left">&larr;</button>
+      <button class="touch-btn" id="touch-down">&darr;</button>
+      <button class="touch-btn" id="touch-right">&rarr;</button>
+    </div>
+    <div class="action-group">
+      <button class="touch-btn" id="touch-action" style="background: rgba(79, 70, 229, 0.85); font-size: 14px; font-weight: 800;">
+        ACTION
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Game Script -->
+  <script type="module">
+    import * as THREE from 'three';
+
+    // ==========================================
+    // 1. Procedural Audio Synthesizer (Zero 404s)
+    // ==========================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playChime(freq = 587.33, duration = 0.15) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + duration);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      }
+      playSuccessFanfare() {
+        if (!this.enabled) return;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          setTimeout(() => this.playChime(freq, 0.25), i * 90);
+        });
+      }
+      playEngineHum(speedRatio) {
+        // Subtle ambient pitch adjust if desired
+      }
+    }
+    const audio = new SoundEngine();
+
+    // ==========================================
+    // 2. Three.js Scene, Renderer & Software WebGL Guard
+    // ==========================================
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Detect software rendering
+    const isSoftwareGl = (() => {
+      try {
+        const gl = document.createElement('canvas').getContext('webgl2');
+        if (!gl) return true;
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+        const gpu = String(gl.getParameter(param));
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+        return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
+      } catch (e) {
+        return false;
+      }
+    })();
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0f1d);
+    scene.fog = new THREE.FogExp2(0x0a0f1d, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 800);
+    camera.position.set(0, 10, -18);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSoftwareGl,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    renderer.shadowMap.enabled = !isSoftwareGl;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // ==========================================
+    // 3. Lighting Rig (Warm Key + Cool Fill)
+    // ==========================================
+    const hemiLight = new THREE.HemisphereLight(0x818cf8, 0x0f172a, 0.7);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    dirLight.position.set(40, 70, 30);
+    dirLight.castShadow = !isSoftwareGl;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.camera.near = 10;
+    dirLight.shadow.camera.far = 250;
+    const shadowD = 60;
+    dirLight.shadow.camera.left = -shadowD;
+    dirLight.shadow.camera.right = shadowD;
+    dirLight.shadow.camera.top = shadowD;
+    dirLight.shadow.camera.bottom = -shadowD;
+    dirLight.shadow.bias = -0.0005;
+    scene.add(dirLight);
+
+    // ==========================================
+    // 4. Procedural Textures & Materials
+    // ==========================================
+    function createRoadTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 512;
+      cvs.height = 512;
+      const ctx = cvs.getContext('2d');
+
+      // Dark asphalt
+      ctx.fillStyle = '#1e2532';
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Fine asphalt noise
+      for (let i = 0; i < 4000; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? '#293548' : '#161d28';
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+      }
+
+      // Center dashed yellow lines
+      ctx.fillStyle = '#f59e0b';
+      for (let y = 10; y < 512; y += 48) {
+        ctx.fillRect(252, y, 8, 28);
+      }
+
+      // White boundary shoulders
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillRect(16, 0, 4, 512);
+      ctx.fillRect(492, 0, 4, 512);
+
+      const texture = new THREE.CanvasTexture(cvs);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return texture;
+    }
+
+    const roadTexture = createRoadTexture();
+
+    // ==========================================
+    // 5. Procedural City Generation (Grid Layout)
+    // ==========================================
+    const citySize = 320;
+    const blockSize = 32;
+    const roadWidth = 14;
+
+    // Ground plane
+    const groundGeo = new THREE.PlaneGeometry(citySize * 1.5, citySize * 1.5);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Roads Grid
+    const roadMat = new THREE.MeshStandardMaterial({
+      map: roadTexture,
+      roughness: 0.8,
+      metalness: 0.2
+    });
+    roadTexture.repeat.set(1, 16);
+
+    // Build Road Network
+    const roadGroup = new THREE.Group();
+    const halfSize = citySize / 2;
+    const step = blockSize + roadWidth;
+
+    for (let x = -halfSize; x <= halfSize; x += step) {
+      const roadGeoV = new THREE.PlaneGeometry(roadWidth, citySize);
+      const roadV = new THREE.Mesh(roadGeoV, roadMat);
+      roadV.rotation.x = -Math.PI / 2;
+      roadV.position.set(x, 0.02, 0);
+      roadV.receiveShadow = true;
+      roadGroup.add(roadV);
+    }
+    for (let z = -halfSize; z <= halfSize; z += step) {
+      const roadGeoH = new THREE.PlaneGeometry(citySize, roadWidth);
+      const roadH = new THREE.Mesh(roadGeoH, roadMat);
+      roadH.rotation.x = -Math.PI / 2;
+      roadH.position.set(0, 0.03, z);
+      roadH.receiveShadow = true;
+      roadGroup.add(roadH);
+    }
+    scene.add(roadGroup);
+
+    // Buildings & Interactive Waypoints
+    const buildings = [];
+    const buildingColors = [0x1e293b, 0x334155, 0x1e1e38, 0x182030, 0x242e42];
+    const windowColors = [0x38bdf8, 0x818cf8, 0xa78bfa, 0x34d399, 0xfde047];
+
+    const interactiveSpots = [
+      { id: 'geo_hq', name: 'GEO Brand Monitor HQ', type: 'job_board', color: 0x6366f1, x: 0, z: -step },
+      { id: 'prompt_depot', name: 'Prompt Depot Warehouse', type: 'depot', color: 0x06b6d4, x: step, z: step },
+      { id: 'claude_towers', name: 'Claude AI Tower', type: 'delivery', color: 0xec4899, x: -step, z: step },
+      { id: 'gemini_hub', name: 'Gemini Media Lab', type: 'delivery', color: 0x10b981, x: -step, z: -step },
+      { id: 'byte_bistro', name: 'ByteBistro Agency', type: 'delivery', color: 0xf59e0b, x: step, z: -step }
+    ];
+
+    // Procedural building generator
+    for (let x = -halfSize + (roadWidth + blockSize / 2); x < halfSize; x += step) {
+      for (let z = -halfSize + (roadWidth + blockSize / 2); z < halfSize; z += step) {
+        // Skip central plaza
+        if (Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+
+        const height = 18 + Math.random() * 45;
+        const widthB = blockSize - 6;
+        const depthB = blockSize - 6;
+
+        const bGroup = new THREE.Group();
+        bGroup.position.set(x, 0, z);
+
+        // Main block
+        const bColor = buildingColors[Math.floor(Math.random() * buildingColors.length)];
+        const bMat = new THREE.MeshStandardMaterial({
+          color: bColor,
+          roughness: 0.4,
+          metalness: 0.6
+        });
+        const bGeo = new THREE.BoxGeometry(widthB, height, depthB);
+        const bMesh = new THREE.Mesh(bGeo, bMat);
+        bMesh.position.y = height / 2;
+        bMesh.castShadow = !isSoftwareGl;
+        bMesh.receiveShadow = true;
+        bGroup.add(bMesh);
+
+        // Rooftop structure (HVAC / Helipad / Spire)
+        if (Math.random() > 0.4) {
+          const roofBox = new THREE.Mesh(
+            new THREE.BoxGeometry(widthB * 0.5, 4, depthB * 0.5),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
+          );
+          roofBox.position.y = height + 2;
+          bGroup.add(roofBox);
+        }
+
+        // Glowing neon sign / trim on tall towers
+        if (height > 35) {
+          const trimColor = windowColors[Math.floor(Math.random() * windowColors.length)];
+          const trimGeo = new THREE.BoxGeometry(widthB + 0.4, 0.8, depthB + 0.4);
+          const trimMat = new THREE.MeshBasicMaterial({ color: trimColor });
+          const trim = new THREE.Mesh(trimGeo, trimMat);
+          trim.position.y = height - 1;
+          bGroup.add(trim);
+        }
+
+        scene.add(bGroup);
+        buildings.push({ x, z, width: widthB, depth: depthB, height });
+      }
+    }
+
+    // Spawn 3D Beacon Rings for Interactive Job Spots
+    const waypoints = [];
+    interactiveSpots.forEach(spot => {
+      const beaconGroup = new THREE.Group();
+      beaconGroup.position.set(spot.x, 0, spot.z);
+
+      // Glowing Ground Ring
+      const ringGeo = new THREE.RingGeometry(3.5, 4.2, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: spot.color,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.1;
+      beaconGroup.add(ring);
+
+      // Vertical holographic light cylinder
+      const beamGeo = new THREE.CylinderGeometry(3.8, 3.8, 16, 24, 1, true);
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: spot.color,
+        transparent: true,
+        opacity: 0.22,
+        side: THREE.DoubleSide
+      });
+      const beam = new THREE.Mesh(beamGeo, beamMat);
+      beam.position.y = 8;
+      beaconGroup.add(beam);
+
+      // Floating 3D Octahedron Icon
+      const iconGeo = new THREE.OctahedronGeometry(1.6, 0);
+      const iconMat = new THREE.MeshStandardMaterial({
+        color: spot.color,
+        emissive: spot.color,
+        emissiveIntensity: 0.6,
+        roughness: 0.2,
+        metalness: 0.8
+      });
+      const icon = new THREE.Mesh(iconGeo, iconMat);
+      icon.position.y = 7;
+      beaconGroup.add(icon);
+
+      scene.add(beaconGroup);
+      waypoints.push({ ...spot, group: beaconGroup, icon, ring });
+    });
+
+    // ==========================================
+    // 6. Procedural Player Courier Vehicle (Composite 3-12 parts)
+    // ==========================================
+    const vehicle = new THREE.Group();
+
+    // 1. Main aerodynamic chassis
+    const bodyGeo = new THREE.BoxGeometry(2.4, 0.7, 4.4);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x4f46e5,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+    bodyMesh.position.y = 0.7;
+    bodyMesh.castShadow = !isSoftwareGl;
+    vehicle.add(bodyMesh);
+
+    // 2. Cabin / Cockpit with tinted glass
+    const cabinGeo = new THREE.BoxGeometry(1.9, 0.6, 2.3);
+    const cabinMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.9,
+      roughness: 0.1,
+      transparent: true,
+      opacity: 0.85
+    });
+    const cabinMesh = new THREE.Mesh(cabinGeo, cabinMat);
+    cabinMesh.position.set(0, 1.25, -0.2);
+    cabinMesh.castShadow = !isSoftwareGl;
+    vehicle.add(cabinMesh);
+
+    // 3. Front Headlights (Glowing)
+    const headlightMat = new THREE.MeshBasicMaterial({ color: 0x67e8f9 });
+    const hlLeft = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.1), headlightMat);
+    hlLeft.position.set(-0.8, 0.75, 2.21);
+    const hlRight = hlLeft.clone();
+    hlRight.position.x = 0.8;
+    vehicle.add(hlLeft, hlRight);
+
+    // 4. Rear Taillights (Red neon strip)
+    const tailMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const tailStrip = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.16, 0.1), tailMat);
+    tailStrip.position.set(0, 0.75, -2.21);
+    vehicle.add(tailStrip);
+
+    // 5. Four Cyber Wheels with Rims
+    const wheels = [];
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.8 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x818cf8, metalness: 0.8, roughness: 0.3 });
+    const wheelPositions = [
+      [-1.3, 0.45, 1.3],
+      [1.3, 0.45, 1.3],
+      [-1.3, 0.45, -1.3],
+      [1.3, 0.45, -1.3]
+    ];
+
+    wheelPositions.forEach(([wx, wy, wz]) => {
+      const wheelHub = new THREE.Group();
+      wheelHub.position.set(wx, wy, wz);
+
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.4, 16), wheelMat);
+      tire.rotation.z = Math.PI / 2;
+      tire.castShadow = !isSoftwareGl;
+      wheelHub.add(tire);
+
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 8), rimMat);
+      rim.rotation.z = Math.PI / 2;
+      wheelHub.add(rim);
+
+      vehicle.add(wheelHub);
+      wheels.push(wheelHub);
+    });
+
+    // 6. Neon Underglow Light
+    const underglowGeo = new THREE.PlaneGeometry(2.2, 4.2);
+    const underglowMat = new THREE.MeshBasicMaterial({
+      color: 0x6366f1,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide
+    });
+    const underglow = new THREE.Mesh(underglowGeo, underglowMat);
+    underglow.rotation.x = -Math.PI / 2;
+    underglow.position.y = 0.12;
+    vehicle.add(underglow);
+
+    // Place vehicle in the central intersection
+    vehicle.position.set(0, 0, 0);
+    scene.add(vehicle);
+
+    // ==========================================
+    // 7. Kinematics, Physics & Controls
+    // ==========================================
+    const keys = {
+      forward: false,
+      backward: false,
+      left: false,
+      right: false,
+      action: false
+    };
+
+    window.addEventListener('keydown', e => {
+      audio.init();
+      switch (e.code) {
+        case 'KeyW':
+        case 'ArrowUp': keys.forward = true; break;
+        case 'KeyS':
+        case 'ArrowDown': keys.backward = true; break;
+        case 'KeyA':
+        case 'ArrowLeft': keys.left = true; break;
+        case 'KeyD':
+        case 'ArrowRight': keys.right = true; break;
+        case 'Space':
+        case 'KeyE':
+          keys.action = true;
+          triggerContextAction();
+          break;
+        case 'KeyC': toggleCamera(); break;
+        case 'KeyR': resetVehicle(); break;
+      }
+    });
+
+    window.addEventListener('keyup', e => {
+      switch (e.code) {
+        case 'KeyW':
+        case 'ArrowUp': keys.forward = false; break;
+        case 'KeyS':
+        case 'ArrowDown': keys.backward = false; break;
+        case 'KeyA':
+        case 'ArrowLeft': keys.left = false; break;
+        case 'KeyD':
+        case 'ArrowRight': keys.right = false; break;
+        case 'Space':
+        case 'KeyE': keys.action = false; break;
+      }
+    });
+
+    // Mobile touch binders
+    function bindTouch(id, key) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = (ev) => { ev.preventDefault(); audio.init(); keys[key] = true; };
+      const end = (ev) => { ev.preventDefault(); keys[key] = false; };
+      el.addEventListener('touchstart', start, { passive: false });
+      el.addEventListener('touchend', end, { passive: false });
+      el.addEventListener('mousedown', start);
+      el.addEventListener('mouseup', end);
+      el.addEventListener('mouseleave', end);
+    }
+    bindTouch('touch-up', 'forward');
+    bindTouch('touch-down', 'backward');
+    bindTouch('touch-left', 'left');
+    bindTouch('touch-right', 'right');
+    const touchActionBtn = document.getElementById('touch-action');
+    if (touchActionBtn) {
+      touchActionBtn.addEventListener('click', () => {
+        audio.init();
+        triggerContextAction();
+      });
+    }
+
+    // Vehicle physics state
+    let speed = 0;
+    const maxSpeed = 48;
+    const acceleration = 24;
+    const friction = 12;
+    const turnSpeed = 2.2;
+    let heading = 0; // rotation around Y
+
+    // Camera Modes: 0 = Chase 3rd Person, 1 = Close Sport, 2 = Top-Down Birds Eye
+    let cameraMode = 0;
+    const camOffsets = [
+      new THREE.Vector3(0, 7.5, -14),
+      new THREE.Vector3(0, 4.0, -8),
+      new THREE.Vector3(0, 36, -0.1)
+    ];
+
+    function toggleCamera() {
+      cameraMode = (cameraMode + 1) % camOffsets.length;
+      audio.playChime(784, 0.1);
+    }
+
+    function resetVehicle() {
+      vehicle.position.set(0, 0, 0);
+      speed = 0;
+      heading = 0;
+      vehicle.rotation.set(0, 0, 0);
+      audio.playChime(440, 0.2);
+    }
+
+    // HUD buttons
+    document.getElementById('btn-camera')?.addEventListener('click', toggleCamera);
+    document.getElementById('btn-reset')?.addEventListener('click', resetVehicle);
+    const audioBtn = document.getElementById('btn-audio');
+    audioBtn?.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      document.getElementById('audio-icon').textContent = audio.enabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+    });
+
+    // ==========================================
+    // 8. Open-World Micro-Jobs & Mission System
+    // ==========================================
+    let playerMoney = 0;
+    let deliveriesCompleted = 0;
+    let activeMission = null;
+
+    const missionsList = [
+      {
+        id: 'm1',
+        title: 'GEO Audit Dispatch',
+        instruction: 'Transport executive brand report from GEO HQ to ByteBistro.',
+        pickup: 'geo_hq',
+        dropoff: 'byte_bistro',
+        reward: 350
+      },
+      {
+        id: 'm2',
+        title: 'AI Prompt Index Batch',
+        instruction: 'Rush urgent search keywords from Prompt Depot to Claude AI Tower.',
+        pickup: 'prompt_depot',
+        dropoff: 'claude_towers',
+        reward: 280
+      },
+      {
+        id: 'm3',
+        title: 'LLM Cache Sync Drive',
+        instruction: 'Transport vector embeddings from Gemini Media Lab to GEO HQ.',
+        pickup: 'gemini_hub',
+        dropoff: 'geo_hq',
+        reward: 420
+      }
+    ];
+
+    function startMission(mission) {
+      activeMission = {
+        ...mission,
+        state: 'pickup', // 'pickup' -> 'dropoff'
+        progress: 0
+      };
+      updateMissionHUD();
+      audio.playChime(659.25, 0.2);
+    }
+
+    function updateMissionHUD() {
+      const tagEl = document.getElementById('mission-tag');
+      const payoutEl = document.getElementById('mission-payout');
+      const nameEl = document.getElementById('mission-name');
+      const descEl = document.getElementById('mission-instruction');
+      const targetLabelEl = document.getElementById('mission-target-label');
+
+      if (!activeMission) {
+        tagEl.textContent = 'AVAILABLE JOBS';
+        payoutEl.textContent = '+$250-$450';
+        nameEl.textContent = 'Visit GEO HQ or Depot';
+        descEl.textContent = 'Drive into any glowing waypoint ring to accept high-payout brand delivery missions.';
+        targetLabelEl.textContent = 'Target: Any Waypoint';
+        return;
+      }
+
+      payoutEl.textContent = `+$${activeMission.reward}`;
+      nameEl.textContent = activeMission.title;
+
+      if (activeMission.state === 'pickup') {
+        const spot = interactiveSpots.find(s => s.id === activeMission.pickup);
+        tagEl.textContent = 'STAGE 1: PICKUP';
+        descEl.textContent = `Head to ${spot?.name} to collect the package.`;
+        targetLabelEl.textContent = `Pickup: ${spot?.name}`;
+      } else {
+        const spot = interactiveSpots.find(s => s.id === activeMission.dropoff);
+        tagEl.textContent = 'STAGE 2: DROPOFF';
+        descEl.textContent = `Deliver the payload to ${spot?.name}!`;
+        targetLabelEl.textContent = `Dropoff: ${spot?.name}`;
+      }
+    }
+
+    // Trigger action when in range of waypoint
+    let currentNearbySpot = null;
+    function checkWaypointsProximity() {
+      const pPos = vehicle.position;
+      const interactToast = document.getElementById('interact-prompt');
+      const interactMsg = document.getElementById('interact-message');
+
+      let found = null;
+      for (const spot of interactiveSpots) {
+        const dx = pPos.x - spot.x;
+        const dz = pPos.z - spot.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist < 6.5) {
+          found = spot;
+          break;
+        }
+      }
+
+      currentNearbySpot = found;
+
+      if (found) {
+        interactToast.classList.add('visible');
+        if (!activeMission) {
+          interactMsg.textContent = `Accept Job at ${found.name}`;
+        } else if (activeMission.state === 'pickup' && activeMission.pickup === found.id) {
+          interactMsg.textContent = `Collect Package from ${found.name}`;
+        } else if (activeMission.state === 'dropoff' && activeMission.dropoff === found.id) {
+          interactMsg.textContent = `Complete Delivery to ${found.name}!`;
+        } else {
+          interactMsg.textContent = `${found.name} (Active job elsewhere)`;
+        }
+      } else {
+        interactToast.classList.remove('visible');
+      }
+
+      // Distance indicator on HUD
+      if (activeMission) {
+        const targetId = activeMission.state === 'pickup' ? activeMission.pickup : activeMission.dropoff;
+        const targetSpot = interactiveSpots.find(s => s.id === targetId);
+        if (targetSpot) {
+          const dx = pPos.x - targetSpot.x;
+          const dz = pPos.z - targetSpot.z;
+          const dist = Math.round(Math.sqrt(dx * dx + dz * dz));
+          document.getElementById('mission-distance').textContent = `${dist}m`;
+          const maxDist = 180;
+          const pct = Math.max(5, Math.min(100, Math.round((1 - dist / maxDist) * 100)));
+          document.getElementById('mission-progress-bar').style.width = `${pct}%`;
+        }
+      }
+    }
+
+    function triggerContextAction() {
+      if (!currentNearbySpot) return;
+
+      if (!activeMission) {
+        // Find mission starting here or assign matching
+        const nextM = missionsList.find(m => m.pickup === currentNearbySpot.id) || missionsList[0];
+        startMission(nextM);
+      } else if (activeMission.state === 'pickup' && activeMission.pickup === currentNearbySpot.id) {
+        activeMission.state = 'dropoff';
+        audio.playChime(880, 0.2);
+        updateMissionHUD();
+      } else if (activeMission.state === 'dropoff' && activeMission.dropoff === currentNearbySpot.id) {
+        // Complete mission
+        playerMoney += activeMission.reward;
+        deliveriesCompleted++;
+        document.getElementById('hud-money').textContent = `$${playerMoney}`;
+        document.getElementById('hud-deliveries').textContent = deliveriesCompleted;
+        audio.playSuccessFanfare();
+
+        // Bonus notification on SaaS banner
+        const ctaText = document.querySelector('.saas-banner-text');
+        if (ctaText) {
+          ctaText.innerHTML = `<span class="saas-sparkle">★</span> <b>Mission Complete!</b> +$${activeMission.reward} Credits Earned!`;
+          setTimeout(() => {
+            ctaText.innerHTML = `<span class="saas-sparkle">✦</span> Play Geo-Drive &amp; Unlock Free Brand Audits!`;
+          }, 4500);
+        }
+
+        activeMission = null;
+        updateMissionHUD();
+      }
+    }
+
+    // Initialize first mission automatically
+    startMission(missionsList[0]);
+
+    // ==========================================
+    // 9. Main Animation Loop & Damping
+    // ==========================================
+    const clock = new THREE.Clock();
+    const _targetCamPos = new THREE.Vector3();
+    const _camLookTarget = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = Math.min(clock.getDelta(), 0.1);
+
+      // Driving Kinematics
+      if (keys.forward) {
+        speed = Math.min(speed + acceleration * delta, maxSpeed);
+      } else if (keys.backward) {
+        speed = Math.max(speed - acceleration * delta, -maxSpeed * 0.4);
+      } else {
+        // Natural friction deceleration
+        if (speed > 0) speed = Math.max(0, speed - friction * delta);
+        else if (speed < 0) speed = Math.min(0, speed + friction * delta);
+      }
+
+      // Steering
+      if (Math.abs(speed) > 0.5) {
+        const turnDir = speed > 0 ? 1 : -1;
+        if (keys.left) heading += turnSpeed * delta * turnDir;
+        if (keys.right) heading -= turnSpeed * delta * turnDir;
+      }
+
+      // Update vehicle heading & translation
+      vehicle.rotation.y = heading;
+      const forwardX = Math.sin(heading);
+      const forwardZ = Math.cos(heading);
+      vehicle.position.x += forwardX * speed * delta;
+      vehicle.position.z += forwardZ * speed * delta;
+
+      // Animate wheels
+      const wheelSpin = (speed * delta) / 0.45;
+      wheels.forEach((w, idx) => {
+        w.children[0].rotation.x += wheelSpin;
+        // Steer front wheels
+        if (idx < 2) {
+          const steerAngle = keys.left ? 0.35 : (keys.right ? -0.35 : 0);
+          w.rotation.y = THREE.MathUtils.damp(w.rotation.y, steerAngle, 12, delta);
+        }
+      });
+
+      // Subtle chassis suspension tilt on turns
+      const rollTarget = keys.left ? 0.04 : (keys.right ? -0.04 : 0);
+      bodyMesh.rotation.z = THREE.MathUtils.damp(bodyMesh.rotation.z, rollTarget, 10, delta);
+
+      // Animate Waypoints (Floating & Pulsing)
+      const time = clock.getElapsedTime();
+      waypoints.forEach(wp => {
+        wp.icon.rotation.y = time * 1.5;
+        wp.icon.position.y = 7 + Math.sin(time * 3) * 0.4;
+        wp.ring.scale.setScalar(1 + Math.sin(time * 4) * 0.08);
+      });
+
+      // Update HUD Speedometer
+      const displayMph = Math.abs(Math.round(speed * 1.4));
+      document.getElementById('hud-speed').textContent = `${displayMph} MPH`;
+
+      // Check waypoint triggers
+      checkWaypointsProximity();
+
+      // Smooth Camera Follow with Damping
+      const offset = camOffsets[cameraMode];
+      if (cameraMode === 2) {
+        // Birds-eye view
+        _targetCamPos.set(vehicle.position.x, offset.y, vehicle.position.z + 0.1);
+      } else {
+        // Third-person chase
+        _targetCamPos.x = vehicle.position.x - forwardX * Math.abs(offset.z);
+        _targetCamPos.y = vehicle.position.y + offset.y;
+        _targetCamPos.z = vehicle.position.z - forwardZ * Math.abs(offset.z);
+      }
+
+      camera.position.lerp(_targetCamPos, 8 * delta);
+      _camLookTarget.copy(vehicle.position);
+      _camLookTarget.y += 1.8;
+      camera.lookAt(_camLookTarget);
+
+      // Render Scene
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ==========================================
+    // 10. Window Resize Handler
+    // ==========================================
+    window.addEventListener('resize', () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+  </script>
+</body>
+</html>
